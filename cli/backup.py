@@ -16,6 +16,54 @@ OneStorePath = os.path.join(os.path.expanduser("~"), ".onestore")
 KeyPath = os.path.join(OneStorePath, "keyphrases.txt")
 SessionPath = os.path.join(OneStorePath, "session.json")
 
+# Check for keyphrases file and path/ or jst create
+if not os.path.exists(OneStorePath):
+    KeyExists = False
+    os.makedirs(OneStorePath)
+    open(KeyPath, 'w').close()
+else:
+    KeyExists = True
+    with open(KeyPath, "r") as file:
+        key = file.read().strip()
+
+# Session mgmt cuz yes
+def save_session(access_token: str, refresh_token: str):
+    session_data = {
+        "access_token": access_token,
+        "refresh_token": refresh_token
+    }
+    encrypted_session = encrypt_data(session_data)
+    with open(SessionPath, 'w') as f:
+        f.write(encrypted_session)
+def load_session() -> dict | None:
+    if not os.path.exists(SessionPath) or not key:
+        return None
+    try:
+        with open(SessionPath, 'r') as f:
+            encrypted_session = f.read().strip()
+        if not encrypted_session:
+            return None
+        return decrypt_data(encrypted_session)
+    except Exception:
+        clear_session()
+        return None
+def clear_session():
+    if os.path.exists(SessionPath):
+        os.remove(SessionPath)
+# Auto Authentication on boot
+def auto_login() -> bool:
+    session = load_session()
+    if session:
+        try:
+            response = supabase.auth.set_session(
+                access_token=session['access_token'],
+                refresh_token=session['refresh_token']
+            )
+            if response.user:
+                return True
+        except Exception:
+            clear_session()
+    return False
 
 # Terminal colors (this is better than importing ig?) 
 class colors:
@@ -52,7 +100,6 @@ def decrypt_data(encrypted_str: str) -> dict:
     decrypted = fernet.decrypt(encrypted_str.encode())
     return json.loads(decrypted.decode())
 
-## BASE CODE (for the UI and UX :P)
 def clrso():
     if os.name == 'nt':
         os.system('cls')
@@ -120,6 +167,7 @@ def onestoreinput() -> None:
         print(f"{colors.CYAN}Returning to OneStore CLI...{colors.RESET}")
         time.sleep(2)
         onestoreinput()
+
 def support():
     onestorelogo()
     print(f"{colors.BOLD}{colors.CYAN}OneStore Support Information{colors.RESET}")
@@ -150,112 +198,25 @@ def auth():
         time.sleep(1)
         auth()
         
-
-# AUTHENTICATION TAB ---{
-# Session mgmt
-def save_session(access_token: str, refresh_token: str):
-    session_data = {
-        "access_token": access_token,
-        "refresh_token": refresh_token
-    }
-    encrypted_session = encrypt_data(session_data)
-    with open(SessionPath, 'w') as f:
-        f.write(encrypted_session)
-def load_session() -> dict | None:
-    if not os.path.exists(SessionPath) or not key:
-        return None
-    try:
-        with open(SessionPath, 'r') as f:
-            encrypted_session = f.read().strip()
-        if not encrypted_session:
-            return None
-        return decrypt_data(encrypted_session)
-    except Exception:
-        clear_session()
-        return None
-def clear_session():
-    if os.path.exists(SessionPath):
-        os.remove(SessionPath)
-# Auto Authentication on boot
-def auto_login() -> bool:
-    session = load_session()
-    if session:
-        try:
-            response = supabase.auth.set_session(
-                access_token=session['access_token'],
-                refresh_token=session['refresh_token']
-            )
-            if response.user:
-                return True
-        except Exception:
-            clear_session()
-    return False
-# Login Logout
-def logout():      
-    supabase.auth.sign_out()
-    clear_session()
-    open(KeyPath, 'w').close() 
-    print(f"{colors.GREEN} Thank you for using OneStore.\n You have now been logged out successfully.{colors.RESET}")
-    time.sleep(2)
-    onestoreinput()
-def login():
+# BEFORE PRODUCTION ADD THE RESET FUNCTIONALITY HERE
+# Dont be lazy smh
+def resetpass():
     onestorelogo()
-    print(f"{colors.BOLD}{colors.PURPLE}OneStore Authenticate {colors.RESET}")
-    print(f"{colors.YELLOW}Login to your OneStore account{colors.RESET}")
+    print(f"{colors.BOLD}{colors.PURPLE}OneStore Authentication Master {colors.RESET}")
+    print(f"{colors.BOLD}{colors.CYAN}OneStore password reset{colors.RESET}")
     email = input(f"{colors.BOLD}{colors.CYAN}Enter your OneStore email: {colors.RESET}")
-    password = getpass.getpass(f"{colors.BOLD}{colors.CYAN}Enter your OneStore password: {colors.RESET}")
-    response = supabase.auth.sign_in_with_password({
-        "email": email,
-        "password": password,
-    })
+    response = supabase.auth.reset_password_for_email(email)
     print(response)
-    if response.user:
-        enter= False
-        while enter == False:
-            clrso()
-            onestorelogo()
-            key1 = input (f"{colors.BOLD}{colors.CYAN}Enter Keyphrase 1: {colors.RESET}").lower()
-            key2 = input (f"{colors.BOLD}{colors.CYAN}Enter Keyphrase 2: {colors.RESET}").lower()
-            key3 = input (f"{colors.BOLD}{colors.CYAN}Enter Keyphrase 3: {colors.RESET}").lower()
-            key4 = input (f"{colors.BOLD}{colors.CYAN}Enter Keyphrase 4: {colors.RESET}").lower()
-            key5 = input (f"{colors.BOLD}{colors.CYAN}Enter Keyphrase 5: {colors.RESET}").lower()
-            finalkey = key1 + key2 + key3 + key4 + key5
-            uid = response.user.id
-            respondevu = (
-                supabase.table("Databayse")
-                .select("salt", "hash")
-                .eq("useruid", uid)
-                .execute()
-            )
-            salt = respondevu.data[0]['salt']
-            dbhash = respondevu.data[0]['hash']
-            checkMaHash = hashlib.sha256((finalkey + salt).encode()).hexdigest()
-            if checkMaHash == dbhash:
-                enter = True
-                global key
-                key = finalkey
-                open(KeyPath, 'w').write(finalkey)
-                save_session(
-                    response.session.access_token,
-                    response.session.refresh_token
-                )
-            else:
-                print(f"{colors.RED} Incorrect keyphrases. Please try again.{colors.RESET}")
-                print(f"{colors.CYAN} Passwords cannot be decrypted without correct keyphrases.{colors.RESET}")
-        print(f"{colors.GREEN}Login Successful! Welcome back to OneStore.{colors.RESET}")
-        time.sleep(1)
+    if response:
+        print(f"{colors.GREEN}Password reset email sent! Please check your email to reset your OneStore password.{colors.RESET}")
+        time.sleep(2)
         onestoreinput()
     else:
-        print(f"{colors.RED}Login FAILED! Please check your email and password and try again.{colors.RESET}")
-def authcheck():
-    try:
-        if supabase.auth.get_user():        
-            return True
-        else:
-            return False
-    except Exception:
-        clear_session()
-        return False
+        print(f"{colors.RED}FAILED TO SEND PASSWORD RESET EMAIL! Please check your email and try again.{colors.RESET}")
+        print(f"{colors.CYAN}If this issue persists, please contact OneStore support.{colors.RESET}")
+        print(f"{colors.CYAN}Redirecting to OneStore{colors.RESET}")
+        time.sleep(5)
+        onestoreinput()
 def signup():
     onestorelogo()
     print(f"{colors.BOLD}{colors.PURPLE}OneStore Authenticate {colors.RESET}")
@@ -334,34 +295,79 @@ def signup():
                         print(f"{colors.RED}Defaulting to KEYPHRASES @ OneStore{colors.RESET}")
                         print(f"{colors.RED}Please save these keyphrases in a safeplace{colors.RESET}")
                         time.sleep(0.5)
-# BEFORE PRODUCTION ADD THE RESET FUNCTIONALITY HERE
-# Dont be lazy smh
-# REMINDER TO DO IT (hence the 3 line comments)
-def resetpass():
+def authcheck():
+    try:
+        if supabase.auth.get_user():        
+            return True
+        else:
+            return False
+    except Exception:
+        clear_session()
+        return False
+
+# Login Logout
+def logout():      
+    supabase.auth.sign_out()
+    clear_session()
+    open(KeyPath, 'w').close() 
+    print(f"{colors.GREEN} Thank you for using OneStore.\n You have now been logged out successfully.{colors.RESET}")
+    time.sleep(2)
+    onestoreinput()
+def login():
     onestorelogo()
-    print(f"{colors.BOLD}{colors.PURPLE}OneStore Authentication Master {colors.RESET}")
-    print(f"{colors.BOLD}{colors.CYAN}OneStore password reset{colors.RESET}")
+    print(f"{colors.BOLD}{colors.PURPLE}OneStore Authenticate {colors.RESET}")
+    print(f"{colors.YELLOW}Login to your OneStore account{colors.RESET}")
     email = input(f"{colors.BOLD}{colors.CYAN}Enter your OneStore email: {colors.RESET}")
-    response = supabase.auth.reset_password_for_email(email)
+    password = getpass.getpass(f"{colors.BOLD}{colors.CYAN}Enter your OneStore password: {colors.RESET}")
+    response = supabase.auth.sign_in_with_password({
+        "email": email,
+        "password": password,
+    })
     print(response)
-    if response:
-        print(f"{colors.GREEN}Password reset email sent! Please check your email to reset your OneStore password.{colors.RESET}")
-        time.sleep(2)
+    if response.user:
+        enter= False
+        while enter == False:
+            clrso()
+            onestorelogo()
+            key1 = input (f"{colors.BOLD}{colors.CYAN}Enter Keyphrase 1: {colors.RESET}").lower()
+            key2 = input (f"{colors.BOLD}{colors.CYAN}Enter Keyphrase 2: {colors.RESET}").lower()
+            key3 = input (f"{colors.BOLD}{colors.CYAN}Enter Keyphrase 3: {colors.RESET}").lower()
+            key4 = input (f"{colors.BOLD}{colors.CYAN}Enter Keyphrase 4: {colors.RESET}").lower()
+            key5 = input (f"{colors.BOLD}{colors.CYAN}Enter Keyphrase 5: {colors.RESET}").lower()
+            finalkey = key1 + key2 + key3 + key4 + key5
+            uid = response.user.id
+            respondevu = (
+                supabase.table("Databayse")
+                .select("salt", "hash")
+                .eq("useruid", uid)
+                .execute()
+            )
+            salt = respondevu.data[0]['salt']
+            dbhash = respondevu.data[0]['hash']
+            checkMaHash = hashlib.sha256((finalkey + salt).encode()).hexdigest()
+            if checkMaHash == dbhash:
+                enter = True
+                global key
+                key = finalkey
+                open(KeyPath, 'w').write(finalkey)
+                save_session(
+                    response.session.access_token,
+                    response.session.refresh_token
+                )
+            else:
+                print(f"{colors.RED} Incorrect keyphrases. Please try again.{colors.RESET}")
+                print(f"{colors.CYAN} Passwords cannot be decrypted without correct keyphrases.{colors.RESET}")
+        print(f"{colors.GREEN}Login Successful! Welcome back to OneStore.{colors.RESET}")
+        time.sleep(1)
         onestoreinput()
     else:
-        print(f"{colors.RED}FAILED TO SEND PASSWORD RESET EMAIL! Please check your email and try again.{colors.RESET}")
-        print(f"{colors.CYAN}If this issue persists, please contact OneStore support.{colors.RESET}")
-        print(f"{colors.CYAN}Redirecting to OneStore{colors.RESET}")
-        time.sleep(5)
-        onestoreinput()
-#}
+        print(f"{colors.RED}Login FAILED! Please check your email and password and try again.{colors.RESET}")
 
-
-# Password storage tab ---{
 # Pass retreival once pass storage actually works 😔
 def passretrieve():
     print('UNDER DEVELOPEMENT')
-## REMINDER TO DO ABOVE ^^^^^^^^^^^^^^^^^
+
+# Pass storage functions
 def passstorefx(service, username, password):
     if authcheck() == True:
         uid = supabase.auth.get_user().user.id
@@ -455,18 +461,8 @@ def passgen():
         print("Password not saved.")
         input("Press enter/return to return to OneStore CLI:")
         onestoreinput()
-#}
 
-## ON LOAD
-# Check for keyphrases file and path/ or jst create
-if not os.path.exists(OneStorePath):
-    KeyExists = False
-    os.makedirs(OneStorePath)
-    open(KeyPath, 'w').close()
-else:
-    KeyExists = True
-    with open(KeyPath, "r") as file:
-        key = file.read().strip()
+
 if KeyExists and key:
     if auto_login():
         onestorelogo()
