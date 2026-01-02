@@ -51,6 +51,7 @@ def decrypt_data(encrypted_str: str) -> dict:
     fernet = Fernet(keyen)
     decrypted = fernet.decrypt(encrypted_str.encode())
     return json.loads(decrypted.decode())
+print(decrypt_data("gAAAAABpUy0qfkkCfYigxH_wmc7dhRErBrpp9LFFzyueeBlOFFmOiKwZHzmm1C_96IuGTYn2L-aP5-u34VbG37fqxnEI1-Rj7w=="))
 
 ## BASE CODE (for the UI and UX :P)
 def clrso():
@@ -84,6 +85,8 @@ def helpmenu():
     print(f"{colors.YELLOW}auth{colors.RESET}           : OneStore account Login/Signup")
     print(f"{colors.YELLOW}password-gen{colors.RESET}   : Generate a secure password")
     print(f"{colors.YELLOW}passstore{colors.RESET}      : Store a password in OneStore")
+    print(f"{colors.YELLOW}clear-passstore{colors.RESET} : Clear all stored passwords in OneStore")
+    print(f"{colors.YELLOW}passretrieve{colors.RESET}   : Retrieve stored passwords from OneStore")
     #NEED TO ADD MORE COMMANDS HERE LATER
     print(f"{colors.YELLOW}support{colors.RESET}        : Get OneStore support information")
     print(f"{colors.YELLOW}exit{colors.RESET}           : Exit OneStore")
@@ -104,6 +107,8 @@ def onestoreinput() -> None:
         clearpassstore()
     elif inputstr == "password-gen":
         passgen()
+    elif inputstr == "passretrieve":
+        passretrieve()
     elif inputstr == "support":
         support()
     elif inputstr == "passstore":
@@ -360,7 +365,11 @@ def resetpass():
 # Password storage tab ---{
 # Pass retreival once pass storage actually works 😔
 def passretrieve():
-    print('UNDER DEVELOPEMENT')
+    uid = supabase.auth.get_user().user.id
+    response = supabase.table("Databayse").select("passwords").eq("useruid", uid).execute()
+    encrypted_passwords = response.data[0]['passwords']
+    passwordsjson = decrypt_data(encrypted_passwords)
+    print(passwordsjson)
 ## REMINDER TO DO ABOVE ^^^^^^^^^^^^^^^^^
 def passstorefx(service, username, password):
     if authcheck() == True:
@@ -368,9 +377,11 @@ def passstorefx(service, username, password):
         dbdata = supabase.table("Databayse").select("passwords").eq("useruid", uid).execute()
         encrypted_passwords = dbdata.data[0]['passwords']
         print(encrypted_passwords)
+        passwordsjson = ''
         if encrypted_passwords:
             try:
                 passwordsjson = decrypt_data(encrypted_passwords)
+                passwordsjson = json.dumps(passwordsjson)
                 print(passwordsjson)
                 time.sleep(5)
             except Exception:
@@ -380,21 +391,21 @@ def passstorefx(service, username, password):
                 input("Press enter/return to return to OneStore CLI:")
                 onestoreinput()
                 return
-        
-        pass_num = 1
-        while f"pass{pass_num}" in passwordsjson:
-            pass_num += 1
-        
-        newpass = {
-            "service": service,
-            "username": username,
-            "password": password
-        }
-        passwordsjson[f"pass{pass_num}"] = newpass
-        print(passwordsjson)
-        encrypted_data = encrypt_data(passwordsjson)
+        passnum = 1
+        for k in json.loads(passwordsjson).keys():
+            if k.startswith("pass"):
+                num = int(k[4:])
+                if num >= passnum:
+                    passnum = num + 1
+        appendar = json.loads(passwordsjson)
+        appendi = {f"pass{passnum}" : {"service": service, "username": username, "password": password}}
+        appendar.update(appendi)
+        encrypted_data = encrypt_data(appendar)
         print(encrypted_data)
-        response = supabase.table("Databayse").update({"passwords": encrypted_data}).eq("useruid", uid).execute()
+        time.sleep(6)
+        uid = supabase.auth.get_user().user.id
+        print(uid)
+        response =( supabase.table("Databayse").update({"passwords": encrypted_data}).eq("useruid", uid).execute())
         print(response)
         print(f"{colors.GREEN}Password saved successfully to OneStore!{colors.RESET}")
         input("Press enter/return to return to OneStore CLI:")
@@ -456,6 +467,9 @@ def passgen():
         input("Press enter/return to return to OneStore CLI:")
         onestoreinput()
 #}
+
+# EXTRA FEATURES TAB ---{
+
 
 ## ON LOAD
 # Check for keyphrases file and path/ or jst create
