@@ -1,8 +1,0 @@
-{
-    pass1: [
-        "service": "google",
-        "username": "",
-        "password": "",
-    ],
-    pass2: []
-}

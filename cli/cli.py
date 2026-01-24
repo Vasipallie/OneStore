@@ -51,7 +51,6 @@ def decrypt_data(encrypted_str: str) -> dict:
     fernet = Fernet(keyen)
     decrypted = fernet.decrypt(encrypted_str.encode())
     return json.loads(decrypted.decode())
-print(decrypt_data("gAAAAABpUy0qfkkCfYigxH_wmc7dhRErBrpp9LFFzyueeBlOFFmOiKwZHzmm1C_96IuGTYn2L-aP5-u34VbG37fqxnEI1-Rj7w=="))
 
 ## BASE CODE (for the UI and UX :P)
 def clrso():
@@ -293,7 +292,7 @@ def signup():
             salt = ''.join(random.choice(characters) for i in range(7))
             global key
             key = finalkey
-            passwordjson = encrypt_data('{}')
+            passwordjson = encrypt_data({})
             response = (
                 supabase.table("Databayse")
                 .insert({"useruid": uid, "salt": salt, "hash": hashlib.sha256((finalkey + salt).encode()).hexdigest(), "passwords": passwordjson})
@@ -339,7 +338,7 @@ def signup():
                         print(f"{colors.RED}Defaulting to KEYPHRASES @ OneStore{colors.RESET}")
                         print(f"{colors.RED}Please save these keyphrases in a safeplace{colors.RESET}")
                         time.sleep(0.5)
-# BEFORE PRODUCTION ADD THE RESET FUNCTIONALITY HERE
+# BEFORE PRODUCTION ADD THE RESET FUNCTIONALITY HERE  - next version, i aint doing ts now
 # Dont be lazy smh
 # REMINDER TO DO IT (hence the 3 line comments)
 def resetpass():
@@ -347,30 +346,39 @@ def resetpass():
     print(f"{colors.BOLD}{colors.PURPLE}OneStore Authentication Master {colors.RESET}")
     print(f"{colors.BOLD}{colors.CYAN}OneStore password reset{colors.RESET}")
     email = input(f"{colors.BOLD}{colors.CYAN}Enter your OneStore email: {colors.RESET}")
-    response = supabase.auth.reset_password_for_email(email)
-    print(response)
-    if response:
-        print(f"{colors.GREEN}Password reset email sent! Please check your email to reset your OneStore password.{colors.RESET}")
-        time.sleep(2)
-        onestoreinput()
-    else:
-        print(f"{colors.RED}FAILED TO SEND PASSWORD RESET EMAIL! Please check your email and try again.{colors.RESET}")
-        print(f"{colors.CYAN}If this issue persists, please contact OneStore support.{colors.RESET}")
-        print(f"{colors.CYAN}Redirecting to OneStore{colors.RESET}")
-        time.sleep(5)
-        onestoreinput()
+   
 #}
 
 
 # Password storage tab ---{
 # Pass retreival once pass storage actually works 😔
 def passretrieve():
-    uid = supabase.auth.get_user().user.id
-    response = supabase.table("Databayse").select("passwords").eq("useruid", uid).execute()
-    encrypted_passwords = response.data[0]['passwords']
-    passwordsjson = decrypt_data(encrypted_passwords)
-    print(passwordsjson)
-## REMINDER TO DO ABOVE ^^^^^^^^^^^^^^^^^
+    if authcheck() == False:
+        print(f"{colors.RED}You must be logged in to retrieve passwords from OneStore.{colors.RESET}")
+        time.sleep(2)
+        onestoreinput()
+        return
+    try:
+        uid = supabase.auth.get_user().user.id
+        response = supabase.table("Databayse").select("passwords").eq("useruid", uid).execute()
+        encrypted_passwords = response.data[0]['passwords']
+        if not encrypted_passwords:
+            print(f"{colors.YELLOW}No passwords stored yet.{colors.RESET}")
+            input("Press enter/return to return to OneStore CLI:")
+            onestoreinput()
+            return
+        passwordsjson = decrypt_data(encrypted_passwords)
+        print(passwordsjson)
+        input("Press enter/return to return to OneStore CLI:")
+        onestoreinput()
+    except Exception as e:
+        print(f"{colors.RED}ERROR: Cannot decrypt stored passwords.{colors.RESET}")
+        print(f"{colors.YELLOW}Your keyphrases may not match the ones used to encrypt your passwords.{colors.RESET}")
+        print(f"{colors.YELLOW}This can happen if password data was corrupted or stored incorrectly.{colors.RESET}")
+        print(f"{colors.CYAN}You can use 'clear-passstore' to reset your password store if needed.{colors.RESET}")
+        input("Press enter/return to return to OneStore CLI:")
+        onestoreinput()
+    
 def passstorefx(service, username, password):
     if authcheck() == True:
         uid = supabase.auth.get_user().user.id
@@ -401,12 +409,8 @@ def passstorefx(service, username, password):
         appendi = {f"pass{passnum}" : {"service": service, "username": username, "password": password}}
         appendar.update(appendi)
         encrypted_data = encrypt_data(appendar)
-        print(encrypted_data)
-        time.sleep(6)
         uid = supabase.auth.get_user().user.id
-        print(uid)
         response =( supabase.table("Databayse").update({"passwords": encrypted_data}).eq("useruid", uid).execute())
-        print(response)
         print(f"{colors.GREEN}Password saved successfully to OneStore!{colors.RESET}")
         input("Press enter/return to return to OneStore CLI:")
         onestoreinput()
