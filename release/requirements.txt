@@ -1,0 +1,3 @@
+wonderwords
+supabase
+cryptography
