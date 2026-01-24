@@ -148,7 +148,7 @@ Having issues? [Open an issue](https://github.com/vasipallie/OneStore/issues) on
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is open source and available under the [APGL License](LICENSE).
 
 ---
 
