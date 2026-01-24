@@ -130,7 +130,7 @@ OneStore/
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to:
+Contributions are welcome to OneStore! Feel free to:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -151,7 +151,3 @@ Having issues? [Open an issue](https://github.com/vasipallie/OneStore/issues) on
 This project is open source and available under the [APGL License](LICENSE).
 
 ---
-
-<p align="center">
-  Made with ❤️ by <a href="https://github.com/vasipallie">vasipallie</a>
-</p>
