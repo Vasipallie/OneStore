@@ -1,3 +1,0 @@
-wonderwords
-supabase
-cryptography
