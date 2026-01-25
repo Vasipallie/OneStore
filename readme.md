@@ -28,33 +28,9 @@ OneStore is a secure command-line password manager that stores your credentials 
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/vasipallie/OneStore.git
-   cd OneStore
-   ```
-
-2. **Create a virtual environment** (recommended)
-   ```bash
-   python -m venv .venv
-   
-   # Windows
-   .venv\Scripts\activate
-   
-   # macOS/Linux
-   source .venv/bin/activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Run OneStore**
-   ```bash
-   cd cli
-   python cli.py
-   ```
+1. Go to [OneStore Release](https://github.com/Vasipallie/OneStore/releases/tag/Release) and download the latest version of onestore for your device (ie. windows users download the Onestore.exe file)
+2. Run the executable locally on your device
+3. Proceed to use the onestore application
 
 ---
 
@@ -62,16 +38,17 @@ OneStore is a secure command-line password manager that stores your credentials 
 
 ### Commands
 
-| Command | Description |
-|---------|-------------|
-| `help` | Show all available commands |
-| `auth` | Login, signup, or manage your account |
-| `password-gen` | Generate a secure random password |
-| `passstore` | Store a new password |
-| `passretrieve` | Retrieve your stored passwords |
-| `clear-passstore` | Clear all stored passwords |
-| `support` | Get support information |
-| `exit` | Exit OneStore |
+
+| Command           | Description                           |
+| ------------------- | --------------------------------------- |
+| `help`            | Show all available commands           |
+| `auth`            | Login, signup, or manage your account |
+| `password-gen`    | Generate a secure random password     |
+| `passstore`       | Store a new password                  |
+| `passretrieve`    | Retrieve your stored passwords        |
+| `clear-passstore` | Clear all stored passwords            |
+| `support`         | Get support information               |
+| `exit`            | Exit OneStore                         |
 
 ### First Time Setup
 
