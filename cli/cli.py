@@ -272,6 +272,10 @@ def signup():
         print(f"{colors.RED}Passwords do not match. Please try again.{colors.RESET}")
         time.sleep(1)
         signup()
+    elif len(password) < 6:
+        print(f"{colors.RED}Password must be at least 6 characters long. Please try again.{colors.RESET}")
+        time.sleep(1)
+        signup()
     else:
         response = supabase.auth.sign_up({
             "email": email,
