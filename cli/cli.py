@@ -277,71 +277,76 @@ def signup():
         time.sleep(1)
         signup()
     else:
-        response = supabase.auth.sign_up({
-            "email": email,
-            "password": password,
-        })
-        if response.user: 
-            rword = RandomWord()
-            uid = response.user.id
-            key1 = rword.word(word_min_length=3, word_max_length=8).lower()
-            key2 = rword.word(word_min_length=3, word_max_length=8).lower()
-            key3 = rword.word(word_min_length=3, word_max_length=8).lower()
-            key4 = rword.word(word_min_length=3, word_max_length=8).lower()
-            key5 = rword.word(word_min_length=3, word_max_length=8).lower()
-            finalkey = key1 + key2 + key3 + key4 + key5
+        try:  
+            response = supabase.auth.sign_up({
+                "email": email,
+                "password": password,
+            })
+            if response.user: 
+                rword = RandomWord()
+                uid = response.user.id
+                key1 = rword.word(word_min_length=3, word_max_length=8).lower()
+                key2 = rword.word(word_min_length=3, word_max_length=8).lower()
+                key3 = rword.word(word_min_length=3, word_max_length=8).lower()
+                key4 = rword.word(word_min_length=3, word_max_length=8).lower()
+                key5 = rword.word(word_min_length=3, word_max_length=8).lower()
+                finalkey = key1 + key2 + key3 + key4 + key5
 
-            usualchar = "!@#$%&*"
-            characters = string.ascii_letters + string.digits + usualchar
-            salt = ''.join(random.choice(characters) for i in range(7))
-            global key
-            key = finalkey
-            passwordjson = encrypt_data({})
-            response = (
-                supabase.table("Databayse")
-                .insert({"useruid": uid, "salt": salt, "hash": hashlib.sha256((finalkey + salt).encode()).hexdigest(), "passwords": passwordjson})
-                .execute()
-            )
-            checkpass = False
-            while checkpass == False:
-                onestorelogo()
-                print(f"{colors.BOLD}{colors.PURPLE}OneStore Authenticate {colors.RESET}")
-                print(f"{colors.BOLD}{colors.PURPLE}-------------------------------------{colors.RESET}")
-                print(f"{colors.RED} PLEASE NOTE DOWN YOUR ONESTORE KEYPHRASES!{colors.RESET}")
-                print(f"{colors.YELLOW} These keyphrases are required to recover your OneStore account. {colors.RESET}")
-                print(f"{colors.YELLOW} If you lose these keyphrases, you will lose access to your OneStore account permanently. {colors.RESET}")
-                print(f"{colors.BOLD}{colors.CYAN}-------------------------------------{colors.RESET}")
-                print(f"{colors.BOLD}{colors.GREEN} 1. {key1}{colors.RESET}")
-                print(f"{colors.BOLD}{colors.GREEN} 2. {key2}{colors.RESET}")
-                print(f"{colors.BOLD}{colors.GREEN} 3. {key3}{colors.RESET}")
-                print(f"{colors.BOLD}{colors.GREEN} 4. {key4}{colors.RESET}")
-                print(f"{colors.BOLD}{colors.GREEN} 5. {key5}{colors.RESET}")
-                print(f"{colors.BOLD}{colors.CYAN}-------------------------------------{colors.RESET}")
-                confirm = input(f"{colors.BOLD}{colors.CYAN}Type 'confirm' to confirm you have noted down your keyphrases: {colors.RESET}")
-                if confirm == "confirm":
-                    clrso()
+                usualchar = "!@#$%&*"
+                characters = string.ascii_letters + string.digits + usualchar
+                salt = ''.join(random.choice(characters) for i in range(7))
+                global key
+                key = finalkey
+                passwordjson = encrypt_data({})
+                response = (
+                    supabase.table("Databayse")
+                    .insert({"useruid": uid, "salt": salt, "hash": hashlib.sha256((finalkey + salt).encode()).hexdigest(), "passwords": passwordjson})
+                    .execute()
+                )
+                checkpass = False
+                while checkpass == False:
                     onestorelogo()
                     print(f"{colors.BOLD}{colors.PURPLE}OneStore Authenticate {colors.RESET}")
-                    key1i= input(f"{colors.BOLD}{colors.CYAN}Enter keyphrase 1: {colors.RESET}").lower()
-                    key2i= input(f"{colors.BOLD}{colors.CYAN}Enter keyphrase 2: {colors.RESET}").lower()
-                    key3i= input(f"{colors.BOLD}{colors.CYAN}Enter keyphrase 3: {colors.RESET}").lower()
-                    key4i= input(f"{colors.BOLD}{colors.CYAN}Enter keyphrase 4: {colors.RESET}").lower()
-                    key5i= input(f"{colors.BOLD}{colors.CYAN}Enter keyphrase 5: {colors.RESET}").lower()
-                    if key1 == key1i and key2 == key2i and key3 == key3i and key4 == key4i and key5 == key5i:
+                    print(f"{colors.BOLD}{colors.PURPLE}-------------------------------------{colors.RESET}")
+                    print(f"{colors.RED} PLEASE NOTE DOWN YOUR ONESTORE KEYPHRASES!{colors.RESET}")
+                    print(f"{colors.YELLOW} These keyphrases are required to recover your OneStore account. {colors.RESET}")
+                    print(f"{colors.YELLOW} If you lose these keyphrases, you will lose access to your OneStore account permanently. {colors.RESET}")
+                    print(f"{colors.BOLD}{colors.CYAN}-------------------------------------{colors.RESET}")
+                    print(f"{colors.BOLD}{colors.GREEN} 1. {key1}{colors.RESET}")
+                    print(f"{colors.BOLD}{colors.GREEN} 2. {key2}{colors.RESET}")
+                    print(f"{colors.BOLD}{colors.GREEN} 3. {key3}{colors.RESET}")
+                    print(f"{colors.BOLD}{colors.GREEN} 4. {key4}{colors.RESET}")
+                    print(f"{colors.BOLD}{colors.GREEN} 5. {key5}{colors.RESET}")
+                    print(f"{colors.BOLD}{colors.CYAN}-------------------------------------{colors.RESET}")
+                    confirm = input(f"{colors.BOLD}{colors.CYAN}Type 'confirm' to confirm you have noted down your keyphrases: {colors.RESET}")
+                    if confirm == "confirm":
                         clrso()
                         onestorelogo()
                         print(f"{colors.BOLD}{colors.PURPLE}OneStore Authenticate {colors.RESET}")
-                        print(f"{colors.GREEN}Keyphrases confirmed! Your OneStore account has been created successfully.{colors.RESET}")
-                        print(f"{colors.GREEN}You can now login to your OneStore account using your email and password.{colors.RESET}")
-                        time.sleep(2)
-                        checkpass = True
-                        clrso()
-                        login()
-                    else:
-                        print(f"{colors.RED}Keyphrases do not match. Please try again.{colors.RESET}")
-                        print(f"{colors.RED}Defaulting to KEYPHRASES @ OneStore{colors.RESET}")
-                        print(f"{colors.RED}Please save these keyphrases in a safeplace{colors.RESET}")
-                        time.sleep(0.5)
+                        key1i= input(f"{colors.BOLD}{colors.CYAN}Enter keyphrase 1: {colors.RESET}").lower()
+                        key2i= input(f"{colors.BOLD}{colors.CYAN}Enter keyphrase 2: {colors.RESET}").lower()
+                        key3i= input(f"{colors.BOLD}{colors.CYAN}Enter keyphrase 3: {colors.RESET}").lower()
+                        key4i= input(f"{colors.BOLD}{colors.CYAN}Enter keyphrase 4: {colors.RESET}").lower()
+                        key5i= input(f"{colors.BOLD}{colors.CYAN}Enter keyphrase 5: {colors.RESET}").lower()
+                        if key1 == key1i and key2 == key2i and key3 == key3i and key4 == key4i and key5 == key5i:
+                            clrso()
+                            onestorelogo()
+                            print(f"{colors.BOLD}{colors.PURPLE}OneStore Authenticate {colors.RESET}")
+                            print(f"{colors.GREEN}Keyphrases confirmed! Your OneStore account has been created successfully.{colors.RESET}")
+                            print(f"{colors.GREEN}You can now login to your OneStore account using your email and password.{colors.RESET}")
+                            time.sleep(2)
+                            checkpass = True
+                            clrso()
+                            login()
+                        else:
+                            print(f"{colors.RED}Keyphrases do not match. Please try again.{colors.RESET}")
+                            print(f"{colors.RED}Defaulting to KEYPHRASES @ OneStore{colors.RESET}")
+                            print(f"{colors.RED}Please save these keyphrases in a safeplace{colors.RESET}")
+                            time.sleep(0.5)
+        except Exception as e:
+            print(f"{colors.RED}Signup FAILED! An error occurred: {e}{colors.RESET}")
+            print(f"{colors.RED}Please try again{colors.RESET}")
+            signup()
 # BEFORE PRODUCTION ADD THE RESET FUNCTIONALITY HERE  - next version, i aint doing ts now
 # Dont be lazy smh
 # REMINDER TO DO IT (hence the 3 line comments)
