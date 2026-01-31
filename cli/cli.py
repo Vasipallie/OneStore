@@ -212,10 +212,14 @@ def login():
         "email": email,
         "password": password,
     })
-    print(response)
     if response.user:
         enter= False
+        ybc = supabase.table("Databayse").select("Yubiconnect").eq("useruid", response.user.id).execute()
+        if ybc.data[0]['Yubiconnect'] == True:
+            yubilogin(response)
+            return
         while enter == False:
+            
             clrso()
             onestorelogo()
             key1 = input (f"{colors.BOLD}{colors.CYAN}Enter Keyphrase 1: {colors.RESET}").lower()
@@ -355,9 +359,7 @@ def resetpass():
     print(f"{colors.BOLD}{colors.PURPLE}OneStore Authentication Master {colors.RESET}")
     print(f"{colors.BOLD}{colors.CYAN}OneStore password reset{colors.RESET}")
     email = input(f"{colors.BOLD}{colors.CYAN}Enter your OneStore email: {colors.RESET}")
-   
 #}
-
 
 # Password storage tab ---{
 # Pass retreival once pass storage actually works 😔
@@ -386,8 +388,7 @@ def passretrieve():
         print(f"{colors.YELLOW}This can happen if password data was corrupted or stored incorrectly.{colors.RESET}")
         print(f"{colors.CYAN}You can use 'clear-passstore' to reset your password store if needed.{colors.RESET}")
         input("Press enter/return to return to OneStore CLI:")
-        onestoreinput()
-    
+        onestoreinput()  
 def passstorefx(service, username, password):
     if authcheck() == True:
         uid = supabase.auth.get_user().user.id
@@ -481,9 +482,110 @@ def passgen():
         onestoreinput()
 #}
 
-# EXTRA FEATURES TAB ---{
+# YubiConnect - a passwordless remote system ---{
+
+def yubilogin(response):
+    clrso()
+    onestorelogo()
+    print(f"{colors.BOLD}{colors.CYAN}OneStore Yubi Authenticate{colors.RESET}")
+    print("Please touch your YubiKey to authenticate...")
+    yubipass = getpass.getpass(f"{colors.BOLD}{colors.CYAN}Please touch your yubikey to authenticate... {colors.RESET}")
+    uid = response.user.id
+    respondevu = (
+        supabase.table("Databayse")
+        .select("salt", "hash")
+        .eq("useruid", uid)
+        .execute()
+    )
+    salt = respondevu.data[0]['salt']
+    dbhash = respondevu.data[0]['hash']
+    checkMaHash = hashlib.sha256((yubipass + salt).encode()).hexdigest()
+    if checkMaHash == dbhash:
+        global key
+        key = yubipass
+        open(KeyPath, 'w').write(yubipass)
+        save_session(
+            response.session.access_token,
+            response.session.refresh_token
+        )
+        print(f"{colors.GREEN}YubiKey Authentication Successful! Welcome back to OneStore.{colors.RESET}")
+        time.sleep(1)
+        onestoreinput()
+    else:
+        print(f"{colors.RED}YubiKey Authentication FAILED! Please try again.{colors.RESET}")
+        time.sleep(2)
+        onestoreinput()
+        
+
+def yubisign():
+    if authcheck() == False:
+        print(f"{colors.RED}You must be logged in to use YubiConnect in OneStore.{colors.RESET}")
+        time.sleep(2)
+        onestoreinput()
+        return
+    elif authcheck() == True:
+        clrso()
+        onestorelogo()
+        print(f"{colors.BOLD}{colors.CYAN}OneStore YubiConnect{colors.RESET}")
+        print("Connect your yubikey to securely access your OneStore passwords.")
+        input("Press enter/return once your YubiKey is connected:")
+        clrso()
+        onestorelogo()
+        print(f"{colors.BOLD}{colors.CYAN}OneStore YubiConnect{colors.RESET}")
+        print(f"{colors.RED}WARNING! Switching to yubiconnect will overwrite your keyphrases{colors.RESET}")
+        print(f"{colors.RED}and you will no longer be able to login or retrieve passwords using them.{colors.RESET}")
+        print(f"{colors.YELLOW}This action is irreversible, your passwords however will be retained.{colors.RESET}")
+        confirm = input(f"{colors.YELLOW}Type 'confirm' to proceed with YubiConnect setup: {colors.RESET}")
+        if confirm == "confirm":
+            clrso()
+            onestorelogo()
+            print(f"{colors.BOLD}{colors.CYAN}OneStore YubiConnect{colors.RESET}")
+            yubipass = getpass.getpass(f"{colors.BOLD}{colors.CYAN}Please touch your yubikey to authenticate... {colors.RESET}")
+            uid = supabase.auth.get_user().user.id
+            respondevu = (
+                supabase.table("Databayse")
+                .select("salt")
+                .eq("useruid", uid)
+                .execute()
+            )
+            # Decrypt them passwords 🙂‍↕
+            if authcheck() == False:
+                print(f"{colors.RED}You must be logged in to retrieve passwords from OneStore.{colors.RESET}")
+                time.sleep(2)
+                onestoreinput()
+                return
+            try:
+                    uid = supabase.auth.get_user().user.id
+                    response = supabase.table("Databayse").select("passwords").eq("useruid", uid).execute()
+                    encrypted_passwords = response.data[0]['passwords']
+                    if not encrypted_passwords:
+                        print(f"{colors.YELLOW}No passwords stored yet.{colors.RESET}")
+                        input("Press enter/return to return to OneStore CLI:")
+                        onestoreinput()
+                        return
+                    passwordsjson = decrypt_data(encrypted_passwords)
+                    # Recrypt em 
+                    open(KeyPath, 'w').write(yubipass)
+                    recrypt = encrypt_data(passwordsjson)
+                    supabase.table("Databayse").update({"passwords": recrypt}).eq("useruid", uid).execute()
+                    salt = respondevu.data[0]['salt']
+                    supabase.table("Databayse").update({"salt": salt, "hash": hashlib.sha256((yubipass + salt).encode()).hexdigest(),"Yubiconnect":"true"}).eq("useruid", uid).execute()
+                    print(f"{colors.GREEN}YubiConnect setup complete! You can now login using your YubiKey.{colors.RESET}")
+                    input("Press enter/return to return to OneStore CLI:")
+                    onestoreinput()  
+                    return
 
 
+            except Exception as e:
+                    print(f"{colors.RED}ERROR: Cannot decrypt stored passwords.{colors.RESET}")
+                    print(f"{colors.YELLOW}Your keyphrases may not match the ones used to encrypt your passwords.{colors.RESET}")
+                    print(f"{colors.CYAN}You can use 'clear-passstore' to reset your password store if needed.{colors.RESET}")
+                    input("Press enter/return to return to OneStore CLI:")
+                    onestoreinput()  
+                    return
+
+
+#}
 ## ON LOAD
 # Check for keyphrases file and path/ or jst create
 if not os.path.exists(OneStorePath):
@@ -499,4 +601,5 @@ if KeyExists and key:
         onestorelogo()
         print(f"{colors.GREEN}Welcome back! Auto-logged in using saved session.{colors.RESET}")
         time.sleep(1)
-onestoreinput() 
+
+yubisign()

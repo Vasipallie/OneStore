@@ -4,12 +4,16 @@
   "description": "a webserver for onestore",
   "license": "UNLICENSED",
   "author": "vasipallie",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "express": "^5.2.1"
+    "@supabase/supabase-js": "^2.93.3",
+    "cookie-parser": "^1.4.7",
+    "ejs": "^4.0.1",
+    "express": "^5.2.1",
+    "supabase": "^2.74.4"
   }
 }
